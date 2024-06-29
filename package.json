@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "solc": "^0.8.25"
+  }
+}
