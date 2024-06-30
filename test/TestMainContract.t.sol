@@ -39,17 +39,17 @@ contract TestMainContract is Test {
 
     modifier proposalsAcceptedAndRejected() {
         vm.startPrank(companyAddress);
-        mainContract.companyMakeDecision(0, MainContract.Decision.Rejected, goal, block.timestamp + 1000);
+        mainContract.companyMakeDecision(1, MainContract.Decision.Rejected, goal, block.timestamp + 1000);
         vm.stopPrank();
         vm.startPrank(company2Address);
-        mainContract.companyMakeDecision(1, MainContract.Decision.Accepted, goal, block.timestamp + 1000);
+        mainContract.companyMakeDecision(2, MainContract.Decision.Accepted, goal, block.timestamp + 1000);
         vm.stopPrank();
         _;
     }
 
     modifier proposalFunded() {
         vm.startPrank(user2);
-        mainContract.fundProposal(1, 100 * 10 ** usdtAddress.decimals());
+        mainContract.fundProposal(2, 100 * 10 ** usdtAddress.decimals());
         vm.stopPrank();
         _;
     }
@@ -104,22 +104,22 @@ contract TestMainContract is Test {
     }
 
     function test__InitializedCorrectly() public view {
-        assert(mainContract.currentProposalId() == 0);
-        assert(mainContract.proposalIdToDecisionStatus(0) == MainContract.Decision.Pending);
+        assert(mainContract.currentProposalId() == 1);
+        assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Pending);
     }
 
     function test__ProposalCreatedCorrectly() public createdProposals {
         assert(mainContract.proposalIdToDecisionStatus(0) == MainContract.Decision.Pending);
-        assert(mainContract.lastProposalSerialNumber(companyAddress) == 0);
-        assert(mainContract.returnSerialNumberOfTheProposalId(companyAddress, 0) == 0);
-        assert(keccak256(bytes(mainContract.proposalIdToURI(0))) == keccak256(bytes(proposal1URI)));
-        assert(mainContract.proposalIdToCompanyAddress(0) == companyAddress);
+        assert(mainContract.lastProposalSerialNumber(companyAddress) == 1);      
+        assert(mainContract.returnSerialNumberOfTheProposalId(companyAddress, 0) == 1); 
+        assert(keccak256(bytes(mainContract.proposalIdToURI(1))) == keccak256(bytes(proposal1URI)));
+        assert(mainContract.proposalIdToCompanyAddress(1) == companyAddress); 
         assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Pending);
-        assert(mainContract.lastProposalSerialNumber(company2Address) == 1);
-        assert(mainContract.returnSerialNumberOfTheProposalId(company2Address, 0) == 1);
-        assert(keccak256(bytes(mainContract.proposalIdToURI(1))) == keccak256(bytes(proposal2URI)));
-        assert(mainContract.proposalIdToCompanyAddress(1) == company2Address);
-        assert(mainContract.currentProposalId() == 2);
+        assert(mainContract.lastProposalSerialNumber(company2Address) == 2);
+        assert(mainContract.returnSerialNumberOfTheProposalId(company2Address, 0) == 2);
+        assert(keccak256(bytes(mainContract.proposalIdToURI(2))) == keccak256(bytes(proposal2URI)));
+        assert(mainContract.proposalIdToCompanyAddress(2) == company2Address);
+        assert(mainContract.currentProposalId() == 3);
         assert(usdtAddress.balanceOf(address(mainContract)) == 120 * 10 ** usdtAddress.decimals());
     }
 
@@ -129,28 +129,28 @@ contract TestMainContract is Test {
         mainContract.companyMakeDecision(1, MainContract.Decision.Rejected, goal, block.timestamp + 1000);
         vm.stopPrank();
 
-        assert(mainContract.proposalIdToDecisionStatus(0) == MainContract.Decision.Rejected);
-        assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Accepted);
-        assert(mainContract.proposalIdToFundingGoal(0) == goal);
-        assert(mainContract.proposalIdToDeadline(0) == block.timestamp + 1000);
+        assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Rejected);
+        assert(mainContract.proposalIdToDecisionStatus(2) == MainContract.Decision.Accepted);
+        assert(mainContract.proposalIdToFundingGoal(1) == goal);
         assert(mainContract.proposalIdToDeadline(1) == block.timestamp + 1000);
+        assert(mainContract.proposalIdToDeadline(2) == block.timestamp + 1000);
     }
 
     function test__FundProposal() public createdProposals proposalsAcceptedAndRejected proposalFunded {
         vm.startPrank(user1);
         vm.expectRevert(MainContract__ProposalIsNotInAcceptedStatus.selector);
-        mainContract.fundProposal(0, 100);
+        mainContract.fundProposal(1, 100);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1000000);
         vm.startPrank(company2Address);
         vm.expectRevert(MainContract__ProposalIsOutdated.selector);
-        mainContract.fundProposal(1, 100);
+        mainContract.fundProposal(2, 100);
         vm.stopPrank();
         uint256 totalFundedAmount = uint256(vm.load(address(mainContract), bytes32(uint256((2)))));
         assert(usdtAddress.balanceOf(address(mainContract)) == 220 * 10 ** usdtAddress.decimals());
-        assert(mainContract.proposalIdToCurrentFunding(1) == 100 * 10 ** usdtAddress.decimals());
-        assert(mainContract.returnAmountFundedOfTheAddress(1, user2) == 100 * 10 ** usdtAddress.decimals());
+        assert(mainContract.proposalIdToCurrentFunding(2) == 100 * 10 ** usdtAddress.decimals());
+        assert(mainContract.returnAmountFundedOfTheAddress(2, user2) == 100 * 10 ** usdtAddress.decimals());
         console.log("totalFundedAmount:", totalFundedAmount);
         assert(totalFundedAmount == 100 * 10 ** usdtAddress.decimals());
 
@@ -193,37 +193,37 @@ contract TestMainContract is Test {
     function test__RefundRejectedProposal() public createdProposals proposalsAcceptedAndRejected proposalFunded {
         vm.warp(block.timestamp + 1000000000);
         vm.startPrank(user1);
-        mainContract.cleanOutdatedProposals(1);
+        mainContract.cleanOutdatedProposals(2);
         vm.stopPrank();
         vm.startPrank(user2);
-        mainContract.refundOutdatedProposal(1);
+        mainContract.refundOutdatedProposal(2);
         vm.stopPrank();
         assert(usdtAddress.balanceOf(user2) == 990 * 10 ** usdtAddress.decimals());
         assert(usdtAddress.balanceOf(address(mainContract)) == 1199 * 10 ** (usdtAddress.decimals() - 1));
-        assert(mainContract.returnAmountFundedOfTheAddress(1, user2) == 0);
-        assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Outdated);
-        assert(mainContract.proposalIdToCurrentFunding(1) == 0);
+        assert(mainContract.returnAmountFundedOfTheAddress(2, user2) == 0);
+        assert(mainContract.proposalIdToDecisionStatus(2) == MainContract.Decision.Outdated);
+        assert(mainContract.proposalIdToCurrentFunding(2) == 0);
     }
 
     function test__CleanOutdatedProposals() public createdProposals proposalsAcceptedAndRejected proposalFunded {
         vm.warp(block.timestamp + 1000000000);
         vm.startPrank(user1);
-        mainContract.cleanOutdatedProposals(1);
+        mainContract.cleanOutdatedProposals(2);
         vm.stopPrank();
-        assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Outdated);
+        assert(mainContract.proposalIdToDecisionStatus(2) == MainContract.Decision.Outdated);
         assert(usdtAddress.balanceOf(user1) == 999901 * 10 ** (usdtAddress.decimals() - 1));
         assert(usdtAddress.balanceOf(address(mainContract)) == 2199 * 10 ** (usdtAddress.decimals() - 1));
     }
 
     function test__CompanyExecutingProposal() public createdProposals proposalsAcceptedAndRejected proposalFunded {
         vm.startPrank(usdtTokenOwner);
-        mainContract.fundProposal(1, 100000 * 10 ** usdtAddress.decimals());
+        mainContract.fundProposal(2, 100000 * 10 ** usdtAddress.decimals());
         vm.stopPrank();
         vm.startPrank(company2Address);
-        mainContract.companyExecutingProposal(1);
+        mainContract.companyExecutingProposal(2);
         vm.stopPrank();
 
-        assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.SuccessfullyFunded);
+        assert(mainContract.proposalIdToDecisionStatus(2) == MainContract.Decision.SuccessfullyFunded);
         assert(usdtAddress.balanceOf(company2Address) == 101100 * 10 ** usdtAddress.decimals());
         assert(usdtAddress.balanceOf(address(mainContract)) == 120 * 10 ** usdtAddress.decimals());
     }
