@@ -8,10 +8,10 @@ import {IERC20WithDecimals} from "./interfaces/IERC20WithDecimals.sol";
 
 contract MainContract is Ownable {
     error MainContract__NotAllowedToPerformThisAction();
-    error MainContract__ProposalIsNotInAcceptedStatus();
+  
     error MainContract__ProposalDoesNotExist();
     error MainContract__ProposalIsOutdated();
-    error MainContract__ProposalIsNotRejected();
+    error MainContract__ProposalIsInTheWrongStatus();
     error MainContract__ProposalIsStillActive();
     error MainContract__NotEnoughCommissionAccumulated();
 
@@ -78,6 +78,9 @@ contract MainContract is Ownable {
         if (msg.sender != proposalIdToCompanyAddress[proposalId]) {
             revert MainContract__NotAllowedToPerformThisAction();
         }
+        if (proposalIdToDecisionStatus[proposalId] != Decision.Pending) {
+            revert MainContract__ProposalIsInTheWrongStatus();
+        }
         proposalIdToDecisionStatus[proposalId] = decision;
         proposalIdToFundingGoal[proposalId] = fundingGoal;
         proposalIdToDeadline[proposalId] = deadline;
@@ -91,7 +94,7 @@ contract MainContract is Ownable {
             revert MainContract__ProposalDoesNotExist();
         }
         if (proposalIdToDecisionStatus[proposalId] != Decision.Accepted) {
-            revert MainContract__ProposalIsNotInAcceptedStatus();
+            revert MainContract__ProposalIsInTheWrongStatus();
         }
         if (block.timestamp > proposalIdToDeadline[proposalId]) {
             revert MainContract__ProposalIsOutdated();
@@ -117,7 +120,7 @@ contract MainContract is Ownable {
 
     function refundOutdatedProposal(uint256 proposalId) external {
         if (proposalIdToDecisionStatus[proposalId] != Decision.Outdated) {
-            revert MainContract__ProposalIsNotRejected();
+            revert MainContract__ProposalIsInTheWrongStatus();
         }
         uint256 amountToTransfer = proposalIdToContributorAddressToAmountFunded[proposalId][msg.sender];
         totalFundedAmount -= amountToTransfer;
@@ -135,7 +138,7 @@ contract MainContract is Ownable {
             revert MainContract__NotAllowedToPerformThisAction();
         }
         if (proposalIdToDecisionStatus[proposalId] != Decision.Accepted) {
-            revert MainContract__ProposalIsNotInAcceptedStatus();
+            revert MainContract__ProposalIsInTheWrongStatus();
         }
         proposalIdToDecisionStatus[proposalId] = Decision.SuccessfullyFunded;
         uint256 amountToWithdraw = proposalIdToCurrentFunding[proposalId];
@@ -152,7 +155,7 @@ contract MainContract is Ownable {
             revert MainContract__ProposalIsStillActive();
         }
         if (proposalIdToDecisionStatus[proposalId] != Decision.Accepted) {
-            revert MainContract__ProposalIsNotInAcceptedStatus();
+            revert MainContract__ProposalIsInTheWrongStatus();
         }
         proposalIdToDecisionStatus[proposalId] = Decision.Outdated;
         IERC20(usdtTokenAddress).safeTransfer(msg.sender, 1 * 10 ** (usdtDecimals - 1));

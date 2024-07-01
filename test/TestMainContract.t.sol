@@ -21,9 +21,10 @@ contract TestMainContract is Test {
     MockUsdtContract usdtAddress;
 
     error MainContract__NotAllowedToPerformThisAction();
-    error MainContract__ProposalIsNotInAcceptedStatus();
+    error MainContract__ProposalIsInTheWrongStatus();
     error MainContract__ProposalIsOutdated();
     error MainContract__NotEnoughCommissionAccumulated();
+    
 
     modifier createdProposals() {
         vm.startPrank(user1);
@@ -128,6 +129,11 @@ contract TestMainContract is Test {
         vm.expectRevert(MainContract__NotAllowedToPerformThisAction.selector);
         mainContract.companyMakeDecision(1, MainContract.Decision.Rejected, goal, block.timestamp + 1000);
         vm.stopPrank();
+        vm.startPrank(companyAddress);
+        vm.expectRevert(MainContract__ProposalIsInTheWrongStatus.selector);
+        mainContract.companyMakeDecision(1, MainContract.Decision.Rejected, goal, block.timestamp + 1000);
+        vm.stopPrank();
+
 
         assert(mainContract.proposalIdToDecisionStatus(1) == MainContract.Decision.Rejected);
         assert(mainContract.proposalIdToDecisionStatus(2) == MainContract.Decision.Accepted);
@@ -138,7 +144,7 @@ contract TestMainContract is Test {
 
     function test__FundProposal() public createdProposals proposalsAcceptedAndRejected proposalFunded {
         vm.startPrank(user1);
-        vm.expectRevert(MainContract__ProposalIsNotInAcceptedStatus.selector);
+        vm.expectRevert(MainContract__ProposalIsInTheWrongStatus.selector);
         mainContract.fundProposal(1, 100);
         vm.stopPrank();
 
