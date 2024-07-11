@@ -58,7 +58,7 @@ contract MainContract is Ownable, ReentrancyGuard {
     }
 
     // each proposal creation requires a commission of 10 USDT
-    function createProposal(address toCompanyAddress, string memory proposalURI) external {
+    function createProposal(address toCompanyAddress, string memory proposalURI) external nonReentrant {
         uint256 currentProposalIdMemory = currentProposalId;
         proposalIdToURI[currentProposalIdMemory] = proposalURI;
         companyAddressToProposalSerialNumberToProposalId[toCompanyAddress][lastProposalSerialNumber[toCompanyAddress]] =
@@ -91,7 +91,7 @@ contract MainContract is Ownable, ReentrancyGuard {
     }
 
     // need to check that funding amount is equal to the amount that is being sent
-    function fundProposal(uint256 proposalId, uint256 fundingAmount) external {
+    function fundProposal(uint256 proposalId, uint256 fundingAmount) external  {
         if (currentProposalId <= proposalId) {
             revert MainContract__ProposalDoesNotExist();
         }
