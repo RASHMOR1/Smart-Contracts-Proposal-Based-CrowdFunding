@@ -91,7 +91,7 @@ contract MainContract is Ownable, ReentrancyGuard {
     }
 
     // need to check that funding amount is equal to the amount that is being sent
-    function fundProposal(uint256 proposalId, uint256 fundingAmount) external  {
+    function fundProposal(uint256 proposalId, uint256 fundingAmount) external nonReentrant  {
         if (currentProposalId <= proposalId) {
             revert MainContract__ProposalDoesNotExist();
         }
