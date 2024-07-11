@@ -153,7 +153,7 @@ contract TestMainContract is Test {
         vm.expectRevert(MainContract__ProposalIsOutdated.selector);
         mainContract.fundProposal(2, 100);
         vm.stopPrank();
-        uint256 totalFundedAmount = uint256(vm.load(address(mainContract), bytes32(uint256((2)))));
+        uint256 totalFundedAmount = uint256(vm.load(address(mainContract), bytes32(uint256((3)))));
         assert(usdtAddress.balanceOf(address(mainContract)) == 220 * 10 ** usdtAddress.decimals());
         assert(mainContract.proposalIdToCurrentFunding(2) == 100 * 10 ** usdtAddress.decimals());
         assert(mainContract.returnAmountFundedOfTheAddress(2, user2) == 100 * 10 ** usdtAddress.decimals());
@@ -182,7 +182,7 @@ contract TestMainContract is Test {
         proposalFunded
         accumulateCommission
     {
-        bytes32 totalFundedAmount = vm.load(address(mainContract), bytes32(uint256((2))));
+        bytes32 totalFundedAmount = vm.load(address(mainContract), bytes32(uint256((3))));
         console.log("totalFundedAmount:", uint256(totalFundedAmount));
         vm.startPrank(mainContractOwner);
         mainContract.withdrawCommission();
@@ -190,6 +190,7 @@ contract TestMainContract is Test {
         vm.stopPrank();
 
         assert(usdtAddress.balanceOf(mainContractOwner) == 220 * 10 ** usdtAddress.decimals());
+        
         assert(
             usdtAddress.balanceOf(address(mainContract))
                 == 300 * 10 ** usdtAddress.decimals() + uint256(totalFundedAmount)

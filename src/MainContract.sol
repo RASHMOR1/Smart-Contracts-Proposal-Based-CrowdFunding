@@ -5,8 +5,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzepplein/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20WithDecimals} from "./interfaces/IERC20WithDecimals.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract MainContract is Ownable {
+
+contract MainContract is Ownable, ReentrancyGuard {
     error MainContract__NotAllowedToPerformThisAction();
   
     error MainContract__ProposalDoesNotExist();
@@ -107,7 +109,7 @@ contract MainContract is Ownable {
     }
 
     // The owner is prohibited from withdrawing the entire commission, as the contract must retain a minimum balance (at least $300) to cover the costs associated with removing outdated proposals
-    function withdrawCommission() external onlyOwner {
+    function withdrawCommission() external onlyOwner nonReentrant {
         uint256 commissionAccumulated = IERC20(usdtTokenAddress).balanceOf(address(this));
         if (commissionAccumulated < 300 * 10 ** usdtDecimals) {
             revert MainContract__NotEnoughCommissionAccumulated();
@@ -118,7 +120,7 @@ contract MainContract is Ownable {
         emit MainContract__CommissionWithdrawn(commissionAllowedToWithdraw);
     }
 
-    function refundOutdatedProposal(uint256 proposalId) external {
+    function refundOutdatedProposal(uint256 proposalId) external nonReentrant {
         if (proposalIdToDecisionStatus[proposalId] != Decision.Outdated) {
             revert MainContract__ProposalIsInTheWrongStatus();
         }
@@ -133,7 +135,7 @@ contract MainContract is Ownable {
 
     // The function doesn’t verify if the funding goal has been achieved. The company has the ability to initiate the execution of the proposal without meeting the goal, thereby collecting all the funds that have been raised.
 
-    function companyExecutingProposal(uint256 proposalId) external {
+    function companyExecutingProposal(uint256 proposalId) external nonReentrant {
         if (msg.sender != proposalIdToCompanyAddress[proposalId]) {
             revert MainContract__NotAllowedToPerformThisAction();
         }
@@ -150,7 +152,7 @@ contract MainContract is Ownable {
     }
 
     //anyone can clean outdated proposals and recieve 0.1$ as a compensation
-    function cleanOutdatedProposals(uint256 proposalId) external {
+    function cleanOutdatedProposals(uint256 proposalId) external nonReentrant {
         if (proposalIdToDeadline[proposalId] > block.timestamp) {
             revert MainContract__ProposalIsStillActive();
         }
