@@ -2,15 +2,13 @@
 pragma solidity 0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Ownable} from "@openzepplein/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20WithDecimals} from "./interfaces/IERC20WithDecimals.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-
 contract MainContract is Ownable, ReentrancyGuard {
     error MainContract__NotAllowedToPerformThisAction();
-  
     error MainContract__ProposalDoesNotExist();
     error MainContract__ProposalIsOutdated();
     error MainContract__ProposalIsInTheWrongStatus();
@@ -42,15 +40,26 @@ contract MainContract is Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(address => uint256)) internal proposalIdToContributorAddressToAmountFunded;
     mapping(uint256 => uint256) public proposalIdToDeadline;
 
-    event MainContract__ProposalCreated(uint256 indexed proposalId, address indexed toCompanyAddress, address indexed fromAddress, string proposalURI, Decision decisionStatus, uint256 fundingGoal, uint256 currentFunding, uint256 deadline);
+    event MainContract__ProposalCreated(
+        uint256 indexed proposalId,
+        address indexed toCompanyAddress,
+        address indexed fromAddress,
+        string proposalURI,
+        Decision decisionStatus,
+        uint256 fundingGoal,
+        uint256 currentFunding,
+        uint256 deadline
+    );
     event MainContract__ProposalStatusChanged(uint256 indexed proposalId, Decision decisionStatus);
     event MainContract__ProposalFunded(uint256 indexed proposalId, uint256 indexed fundingAmount);
     event MainContract__CommissionWithdrawn(uint256 indexed commissionAmount);
     event MainContract__RefundIssued(uint256 indexed proposalId, address indexed recipient, uint256 indexed amount);
     event MainContract__CompanyExecutingProposal(
-        uint256 indexed proposalId, uint256 indexed currentFunding,  Decision decisionStatus, uint256 timeStamp
+        uint256 indexed proposalId, uint256 indexed currentFunding, Decision decisionStatus, uint256 timeStamp
     );
-    event MainContract__ProposalFundingGoalAndDeadlineUpdated(uint256 indexed proposalId, uint256 fundingGoal, uint256 deadline);
+    event MainContract__ProposalFundingGoalAndDeadlineUpdated(
+        uint256 indexed proposalId, uint256 fundingGoal, uint256 deadline
+    );
 
     constructor(address _usdtTokenAddress) Ownable(msg.sender) {
         usdtTokenAddress = _usdtTokenAddress;
@@ -71,7 +80,9 @@ contract MainContract is Ownable, ReentrancyGuard {
         }
 
         IERC20(usdtTokenAddress).safeTransferFrom(msg.sender, address(this), 10 * 10 ** usdtDecimals);
-        emit MainContract__ProposalCreated(currentProposalIdMemory, toCompanyAddress, msg.sender, proposalURI, Decision.Pending, 0, 0, 0);
+        emit MainContract__ProposalCreated(
+            currentProposalIdMemory, toCompanyAddress, msg.sender, proposalURI, Decision.Pending, 0, 0, 0
+        );
     }
 
     function companyMakeDecision(uint256 proposalId, Decision decision, uint256 fundingGoal, uint256 deadline)
@@ -91,7 +102,7 @@ contract MainContract is Ownable, ReentrancyGuard {
     }
 
     // need to check that funding amount is equal to the amount that is being sent
-    function fundProposal(uint256 proposalId, uint256 fundingAmount) external nonReentrant  {
+    function fundProposal(uint256 proposalId, uint256 fundingAmount) external nonReentrant {
         if (currentProposalId <= proposalId) {
             revert MainContract__ProposalDoesNotExist();
         }
@@ -148,7 +159,9 @@ contract MainContract is Ownable, ReentrancyGuard {
         totalFundedAmount -= amountToWithdraw;
 
         IERC20(usdtTokenAddress).safeTransfer(msg.sender, amountToWithdraw);
-        emit MainContract__CompanyExecutingProposal(proposalId, amountToWithdraw, Decision.SuccessfullyFunded,   block.timestamp);
+        emit MainContract__CompanyExecutingProposal(
+            proposalId, amountToWithdraw, Decision.SuccessfullyFunded, block.timestamp
+        );
     }
 
     //anyone can clean outdated proposals and recieve 0.1$ as a compensation
